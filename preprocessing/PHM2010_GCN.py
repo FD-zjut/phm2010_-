@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib
+matplotlib.use('TkAgg')  # 改用TkAgg后端以支持交互式显示
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.sparse as sp
@@ -27,6 +28,7 @@ from torch_geometric.utils import degree,to_undirected,to_networkx
 from torch_geometric.nn import GCNConv,BatchNorm
 from scipy import special
 from torch.utils.data import Dataset
+from preprocessing import generate_features  # 导入特征生成函数
 
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
@@ -58,40 +60,76 @@ np.random.seed(seed)  # Numpy module.
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
     
-device = torch.device("cuda")    
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"使用设备: {device}")
+
+# 如果使用CPU，需要修改一些CUDA相关的设置
+if device.type == "cuda":
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False  
 
 ## 读取数据
 
-c1=np.load('c1_features_0.npy').astype('float32')
-c2=np.load('c1_features_1.npy').astype('float32')
-c3=np.load('c1_features_2.npy').astype('float32')
-c4=np.load('c1_features_3.npy').astype('float32')
-c5=np.load('c1_features_4.npy').astype('float32')
-c6=np.load('c1_features_5.npy').astype('float32')
-c7=np.load('c1_features_6.npy').astype('float32')
-c8=np.load('c1_features_7.npy').astype('float32')
-c9=np.load('c1_features_8.npy').astype('float32')
-c10=np.load('c1_features.npy').astype('float32')
-c11=np.load('c4_features_0.npy').astype('float32')
-c12=np.load('c4_features_1.npy').astype('float32')
-c13=np.load('c4_features_2.npy').astype('float32')
-c14=np.load('c4_features_3.npy').astype('float32')
-c15=np.load('c4_features_4.npy').astype('float32')
-c16=np.load('c4_features_5.npy').astype('float32')
-c17=np.load('c4_features_6.npy').astype('float32')
-c18=np.load('c4_features_7.npy').astype('float32')
-c19=np.load('c4_features_8.npy').astype('float32')
-c20=np.load('c4_features.npy').astype('float32')
-c21=np.load('c6_features_0.npy').astype('float32')
-c22=np.load('c6_features_1.npy').astype('float32')
-c23=np.load('c6_features_2.npy').astype('float32')
-c24=np.load('c6_features_3.npy').astype('float32')
-c25=np.load('c6_features_4.npy').astype('float32')
-c26=np.load('c6_features_5.npy').astype('float32')
-c27=np.load('c6_features_6.npy').astype('float32')
-c28=np.load('c6_features_7.npy').astype('float32')
-c29=np.load('c6_features_8.npy').astype('float32')
-c30=np.load('c6_features.npy').astype('float32')
+# 修改数据加载部分
+try:
+    # 获取当前文件所在目录
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # 检查特征文件是否存在
+    feature_files = [
+        'c1_features_0.npy', 'c1_features_1.npy', 'c1_features_2.npy',
+        'c1_features_3.npy', 'c1_features_4.npy', 'c1_features_5.npy',
+        'c1_features_6.npy', 'c1_features_7.npy', 'c1_features_8.npy',
+        'c1_features.npy'
+    ]
+    
+    files_exist = all(os.path.exists(os.path.join(current_dir, f)) for f in feature_files)
+    
+    if not files_exist:
+        print("特征文件不存在,正在生成特征...")
+        from preprocessing import generate_features
+        generate_features()
+        print("特征生成完成")
+    
+    # 加载所有特征数据
+    c1 = np.load(os.path.join(current_dir, 'c1_features_0.npy')).astype('float32')
+    c2 = np.load(os.path.join(current_dir, 'c1_features_1.npy')).astype('float32')
+    c3 = np.load(os.path.join(current_dir, 'c1_features_2.npy')).astype('float32')
+    c4 = np.load(os.path.join(current_dir, 'c1_features_3.npy')).astype('float32')
+    c5 = np.load(os.path.join(current_dir, 'c1_features_4.npy')).astype('float32')
+    c6 = np.load(os.path.join(current_dir, 'c1_features_5.npy')).astype('float32')
+    c7 = np.load(os.path.join(current_dir, 'c1_features_6.npy')).astype('float32')
+    c8 = np.load(os.path.join(current_dir, 'c1_features_7.npy')).astype('float32')
+    c9 = np.load(os.path.join(current_dir, 'c1_features_8.npy')).astype('float32')
+    c10 = np.load(os.path.join(current_dir, 'c1_features.npy')).astype('float32')
+    c11 = np.load(os.path.join(current_dir, 'c4_features_0.npy')).astype('float32')
+    c12 = np.load(os.path.join(current_dir, 'c4_features_1.npy')).astype('float32')
+    c13 = np.load(os.path.join(current_dir, 'c4_features_2.npy')).astype('float32')
+    c14 = np.load(os.path.join(current_dir, 'c4_features_3.npy')).astype('float32')
+    c15 = np.load(os.path.join(current_dir, 'c4_features_4.npy')).astype('float32')
+    c16 = np.load(os.path.join(current_dir, 'c4_features_5.npy')).astype('float32')
+    c17 = np.load(os.path.join(current_dir, 'c4_features_6.npy')).astype('float32')
+    c18 = np.load(os.path.join(current_dir, 'c4_features_7.npy')).astype('float32')
+    c19 = np.load(os.path.join(current_dir, 'c4_features_8.npy')).astype('float32')
+    c20 = np.load(os.path.join(current_dir, 'c4_features.npy')).astype('float32')
+    c21 = np.load(os.path.join(current_dir, 'c6_features_0.npy')).astype('float32')
+    c22 = np.load(os.path.join(current_dir, 'c6_features_1.npy')).astype('float32')
+    c23 = np.load(os.path.join(current_dir, 'c6_features_2.npy')).astype('float32')
+    c24 = np.load(os.path.join(current_dir, 'c6_features_3.npy')).astype('float32')
+    c25 = np.load(os.path.join(current_dir, 'c6_features_4.npy')).astype('float32')
+    c26 = np.load(os.path.join(current_dir, 'c6_features_5.npy')).astype('float32')
+    c27 = np.load(os.path.join(current_dir, 'c6_features_6.npy')).astype('float32')
+    c28 = np.load(os.path.join(current_dir, 'c6_features_7.npy')).astype('float32')
+    c29 = np.load(os.path.join(current_dir, 'c6_features_8.npy')).astype('float32')
+    c30 = np.load(os.path.join(current_dir, 'c6_features.npy')).astype('float32')
+    
+    print("特征数据加载成功")
+    
+except Exception as e:
+    print(f"数据加载失败: {e}")
+    raise
 
 # 根据皮尔逊系数删去与退化趋势不太相关的退化特征
 delete_index=np.array([ 1,  3,  5,  8, 10, 11, 12, 13, 14, 16, 17, 20])
@@ -191,7 +229,7 @@ for i in range(7):
         c30[:, i, j] = np.squeeze(MinMaxScaler().fit_transform(g30),1)# 归一化
 
 
-# ## KNN建图部分 ##
+# ## KNN建部分 ##
 edge_index=torch.tensor([[0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4,
          5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6],
         [3, 4, 5, 6, 3, 4, 5, 6, 3, 4, 5, 6, 0, 1, 2, 4, 5, 6, 0, 1, 2, 3, 5, 6,
@@ -270,7 +308,7 @@ c30_600=torch.tensor(c30_600).repeat(1,1,1).to(device)
 data=torch.cat((c1_600,c2_600,c3_600,c4_600,c5_600,c6_600,c7_600,c10_600,c11_600,c12_600,c13_600,c14_600,c15_600,c16_600,c17_600,c20_600,c21_600,c22_600,c23_600,c24_600,c25_600,c26_600,c27_600,c28_600),0)
 
 
-# 固定窗口长度为115，设置每把刀的尾点取值范围为115-315
+# 固定窗口长度为115，设每把刀的尾点取值围为115-315
 c1_315th=c1[115:315]
 c2_315th=c2[115:315]
 c3_315th=c3[115:315]
@@ -334,7 +372,7 @@ c28_315th=torch.tensor(c28_315th).repeat(1,1,1).to(device)
 c29_315th=torch.tensor(c29_315th).repeat(1,1,1).to(device)
 c30_315th=torch.tensor(c30_315th).repeat(1,1,1).to(device)
 
-#设置训练集
+#设置测试集
 data_end=torch.cat((c1_315th,c2_315th,c3_315th,c4_315th,c5_315th,c6_315th,c7_315th,c10_315th,c11_315th,c12_315th,c13_315th,c14_315th,c15_315th,c16_315th,c17_315th,c20_315th,c21_315th,c22_315th,c23_315th,c24_315th,c25_315th,c26_315th,c27_315th,c28_315th),0)
 
 # 设置寿命的标签
@@ -351,38 +389,89 @@ train_data = DataLoader(train_data, batch_size=train_size,shuffle=True)
 class GCN(nn.Module):
     def __init__(self):
         super(GCN, self).__init__()
-        self.gcn1=GCNConv(16, 8)
-        self.gcn2=GCNConv(8, 8)
-        # self.gcn3=GCNConv(8, 8)
+        # GCN层
+        self.gcn1 = GCNConv(16, 8)
+        self.gcn2 = GCNConv(8, 8)
         
-        self.line=nn.Sequential(
+        # KAN层
+        self.kan_inner_dim = 32  # KAN内部维度
+        self.kan_layers = 3      # KAN层数
+        
+        # KAN内部网络
+        self.phi_networks = nn.ModuleList([
+            nn.Sequential(
+                nn.Linear(1, self.kan_inner_dim),
+                nn.ReLU(),
+                nn.Linear(self.kan_inner_dim, self.kan_inner_dim),
+                nn.ReLU(),
+                nn.Linear(self.kan_inner_dim, 1)
+            ) for _ in range(56)  # 56是展平后的特征维度
+        ])
+        
+        # KAN聚合网络
+        self.g_network = nn.Sequential(
+            nn.Linear(56, self.kan_inner_dim),  # 56是phi网络的输出数量
+            nn.ReLU(),
+            nn.Linear(self.kan_inner_dim, self.kan_inner_dim),
+            nn.ReLU(),
+            nn.Linear(self.kan_inner_dim, 1)
+        )
+        
+        # 原有的线性层
+        self.line = nn.Sequential(
             nn.Flatten(),
             nn.Linear(56, 24),
             nn.ReLU(),
             nn.Linear(24, 1),
         )
-        # 阈值的期望
-        self.miu_w = nn.Parameter(torch.FloatTensor(1),requires_grad=True)
-        #阈值的方差
-        self.sigma_w=nn.Parameter(torch.FloatTensor(1),requires_grad=True)
+        
+        # 阈值参数
+        self.miu_w = nn.Parameter(torch.FloatTensor(1), requires_grad=True)
+        self.sigma_w = nn.Parameter(torch.FloatTensor(1), requires_grad=True)
+        
         # 初始化网络参数
         self.reset_parameters()
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.miu_w.size(0))
-        # 设置阈值的期望初值范围为1.5-2
         self.miu_w.data.uniform_(1.5, 2)
-        # 设置阈值方差的初值
         self.sigma_w.data.uniform_(0, stdv)
 
+    def kan_forward(self, x):
+        # 展平输入
+        x_flat = x.view(x.size(0), -1)  # [batch_size, 56]
+        
+        # 对每个维度应用phi网络
+        phi_outputs = []
+        for i in range(56):
+            phi_out = self.phi_networks[i](x_flat[:, i:i+1])
+            phi_outputs.append(phi_out)
+        
+        # 拼接所有phi网络的输出
+        phi_concat = torch.cat(phi_outputs, dim=1)  # [batch_size, 56]
+        
+        # 通过g网络进行聚合
+        kan_out = self.g_network(phi_concat)  # [batch_size, 1]
+        
+        return kan_out
+
     def forward(self, x1, edge_index):
+        # GCN特征提取
         x1 = self.gcn1(x1, edge_index)
         x1 = F.relu(x1)
         x1 = self.gcn2(x1, edge_index)
         x1 = F.relu(x1)
-
-        x1 = self.line(x1)
-        return x1
+        
+        # 原有的线性层处理
+        linear_out = self.line(x1)
+        
+        # KAN处理
+        kan_out = self.kan_forward(x1)
+        
+        # 融合两个输出
+        final_out = 0.5 * (linear_out + kan_out)  # 简单平均融合
+        
+        return final_out
 
 #     调用GCN的类
 gcn = GCN()
@@ -432,8 +521,7 @@ for i in range(epoch):
         # 计算寿命的预测值
         T_est=(gcn.miu_w-data)/miu_theta
         
-        
-        ##计算准确度.
+        ##计算准确度
         error_train=label-T_est
         zero = torch.zeros_like(error_train)
         one = torch.ones_like(error_train)
@@ -443,14 +531,9 @@ for i in range(epoch):
         total_train_accuracy = total_train_accuracy + train_accuracy.item()  
 
         #损失函数
-        loss = loss_fn((T_est, label)/train_size \
+        loss = loss_fn(T_est, label)/train_size \
             +(1/(100*torch.maximum(torch.tensor(0).to(device),torch.mean(data_end-gcn.miu_w))+0.0001))\
-            +c+0.0001)
-        # if i>=25:
-        #     loss = torch.sigmoid(gcn.gamma)*loss_fn(T_est, label_train)/train_size + (1-torch.sigmoid(gcn.gamma))*torch.log10(1+loss_fn(std,T_std))\
-        #         +(1/(100*torch.maximum(torch.tensor(0).to(device),torch.mean(data_train_mowei-gcn.miu_w))+0.01)) 
-        # + 0.01*(1-torch.sigmoid(gcn.gamma))*loss_fn(V_est,V)/train_size
-
+            +0.0001
 
         # 训练总损失
         total_train_loss = total_train_loss + loss.item()
@@ -464,140 +547,111 @@ for i in range(epoch):
         if total_train_step % 50 == 0:
             print("训练次数：{}, Loss: {}".format(total_train_step, loss.item()))
 
-    # （训练集数量*滑窗次数）/100
+    # （训练集数量*滑窗次数）/48
     total_train_accuracy = total_train_accuracy/48
-    # if (total_train_accuracy>a1):
-    #     a1=total_train_accuracy
-    #     a2=i
-    # total_test_accuracy = total_test_accuracy*100/5000
     print("训练集准确率 {}%".format(total_train_accuracy))
-    # print("测试集准确率 {}%".format(total_test_accuracy))
-
 
     # 存储训练的总损失
     loss_train.append(total_train_loss)
-    # # loss_test.append(total_test_loss)
-    # # accuracy_test.append(total_test_accuracy)
-    
-    if i % 5 == 0:
-        c=[c30]
-        Te=np.zeros([300,1])
-        i=0
-        dao_rul=np.flip(np.arange(1,316,1)).copy()
-        dao_rul=torch.unsqueeze(torch.tensor(dao_rul), 1).to(device)
 
-        for d in c:
-            dao=torch.tensor(d).to(device)
-            dao_end=torch.unsqueeze(torch.tensor(d[314,:,:]),0).to(device)
+# 在训练循环结束后显示结果图
+print("\n=== 最终训练结果 ===")
 
-            d1b=gcn(dao,edge_index)
-            d1e=gcn(dao_end,edge_index)
+# 创建图形并设置大小
+plt.figure(figsize=(15, 5))
+plt.clf()  # 清除之前的图形
 
-            miu=(d1e-d1b)/dao_rul
-            T=((gcn.miu_w-d1b)/miu)
-            Te[:,i]=np.squeeze(T[0:300].cpu().detach().numpy(),1)
-            i=i+1
+# 第一个子图
+plt.subplot(121)
+test1 = c30
+lll = test1.shape[0]
+onehot = np.ones((lll, 1))
 
-        dao_rua=dao_rul[0:300].cpu().detach().numpy()
+test1 = torch.Tensor(test1).to(device)
+xx2 = gcn(test1, edge_index)
+xx2 = torch.Tensor.cpu(xx2).detach().numpy()
+threshold = torch.Tensor.cpu(gcn.miu_w).detach().numpy()
+onehot = threshold * onehot
 
-        plt.figure(1)
-        plt.title('刀的寿命曲线')
-        plt.subplot(211)
-        plt.plot(Te[:,0])
-        plt.plot(dao_rua)
-        plt.xlabel('c1走刀数')
-        plt.ylabel('c1寿命')
-        
-        
-        test1=c30
-        lll=test1.shape[0]
-        onehot=np.ones((lll, 1))
-    
-        test1=torch.Tensor(test1).to(device)
-        xx2 = gcn(test1,edge_index)
-        xx2=torch.Tensor.cpu(xx2).detach().numpy()
-        threshold=torch.Tensor.cpu(gcn.miu_w).detach().numpy()
-        onehot=threshold*onehot
-    
-        plt.subplot(212)
-        plt.plot(xx2)
-        plt.plot(onehot)
-        plt.show()
-    
-    
-    
+plt.plot(xx2, label='复合退化性能指标', linewidth=2)
+plt.plot(onehot, '--', label='失效阈值', linewidth=2)
+plt.title('失效阈值和复合退化性能指标关系曲线', fontsize=12)
+plt.xlabel('采样点', fontsize=10)
+plt.ylabel('指标值', fontsize=10)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend(fontsize=10)
 
-# # 设置测试集
-# test = c30
-# lll=test.shape[0]
-# onehot=np.ones((lll, 1))
-# test=torch.Tensor(test).to(device)
-# # 计算测试集的复合退化性能指标
-# xx2 = gcn(test,edge_index)
-# xx2=torch.Tensor.cpu(xx2).detach().numpy()
-# #计算失效阈值
-# threshold=torch.Tensor.cpu(gcn.miu_w).detach().numpy()
-# onehot=threshold*onehot
-# # 作出失效阈值和复合退化性能指标关系曲线
-# plt.plot(xx2)
-# plt.plot(onehot)
-# plt.figure(1)
-# plt.show()
+# 第二个子图
+plt.subplot(122)
+c = [c30]
+Te = np.zeros([300,1])
+i = 0
+dao_rul = np.flip(np.arange(1,316,1)).copy()
+dao_rul = torch.unsqueeze(torch.tensor(dao_rul), 1).to(device)
 
-# # 计算剩余寿命
-# c=[c30]
-# Te=np.zeros([300,1])
-# i=0
-# dao_rul=np.flip(np.arange(1,316,1)).copy()
-# dao_rul=torch.unsqueeze(torch.tensor(dao_rul), 1).to(device)
+for d in c:
+    dao = torch.tensor(d).to(device)
+    dao_end = torch.unsqueeze(torch.tensor(d[314,:,:]),0).to(device)
+    d1b = gcn(dao, edge_index)
+    d1e = gcn(dao_end, edge_index)
+    miu = (d1e-d1b)/dao_rul
+    T = ((gcn.miu_w-d1b)/miu)
+    Te[:,i] = np.squeeze(T[0:300].cpu().detach().numpy(),1)
+    i = i+1
 
-# for d in c:
-#     dao=torch.tensor(d).to(device)
-#     dao_end=torch.unsqueeze(torch.tensor(d[314,:,:]),0).to(device)
-#     d1b=gcn(dao,edge_index)
-#     d1e=gcn(dao_end,edge_index)
-#     miu=(d1e-d1b)/dao_rul
-#     T=((gcn.miu_w-d1b)/miu)
-#     Te[:,i]=np.squeeze(T[0:300].cpu().detach().numpy(),1)
-#     i=i+1
-# dao_rua=dao_rul[0:300].cpu().detach().numpy()
-# # 作出实际寿命与预测寿命关系曲线
-# plt.figure(2)
-# plt.title('刀的寿命曲线')
-# plt.plot(Te[:,0])
-# plt.plot(dao_rua)
-# plt.xlabel('c30走刀数')
-# plt.ylabel('c30寿命')
-# plt.show()
+dao_rua = dao_rul[0:300].cpu().detach().numpy()
 
-print("CHI",d1b.cpu().detach().numpy())#CHI
-print("真实寿命",dao_rua)
-print("预测寿命",Te)
-print("阈值",gcn.miu_w)
-# 计算漂移系数的期望
-data_end = c30[314,:,:]
-data = c30[0,:,:]
-data_end=torch.unsqueeze(torch.tensor(data_end),0).to(device)
-data=torch.unsqueeze(torch.tensor(data),0).to(device)
-data_end = gcn(data_end,edge_index)
-data = gcn(data,edge_index)
-miu_theta=(data_end-data)/315
-print("lambda期望",miu_theta)
-# 计算性能评估指标
-err=dao_rua-Te
-####RMSE
-MSE=np.sum(err**2)/100
-####Accuracy
-jishu=np.zeros([300,1])
+plt.plot(Te[:,0], label='预测寿命', linewidth=2)
+plt.plot(dao_rua, '--', label='实际寿命', linewidth=2)
+plt.title('刀具剩余寿命预测曲线', fontsize=12)
+plt.xlabel('c30走刀数', fontsize=10)
+plt.ylabel('剩余寿命', fontsize=10)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend(fontsize=10)
+
+plt.tight_layout()
+
+# 先保存再显示
+plt.savefig('results_plot.png', dpi=300, bbox_inches='tight')
+plt.show()  # 显示图形
+plt.close()  # 显示后关闭
+
+print("结果图已保存为 'results_plot.png' 并显示")
+
+# 计算并打印评估指标
+err = dao_rua - Te
+MSE = np.sum(err**2)/100
+jishu = np.zeros([300,1])
 acc = np.where(err < -10, jishu, err)
-acc = np.where(err >13, jishu, acc)
+acc = np.where(err > 13, jishu, acc)
 acc = np.count_nonzero(acc)
-Accuracy= acc*100/300
-####Score
-scoz=err[np.where(err>0)]
-scof=err[np.where(err<0)]
-sz=np.sum(np.exp(scoz/10)-1)
-sf=np.sum(np.exp(-scof/10)-1)
-score=(sz+sf)
-print(MSE,score,Accuracy)
+Accuracy = acc*100/300
+
+scoz = err[np.where(err>0)]
+scof = err[np.where(err<0)]
+sz = np.sum(np.exp(scoz/10)-1)
+sf = np.sum(np.exp(-scof/10)-1)
+score = (sz+sf)
+
+print("\n=== 模型评估指标 ===")
+print(f"复合退化性能指标(CHI): {d1b.cpu().detach().numpy()}")
+print(f"失效阈值: {gcn.miu_w.item():.4f}")
+print(f"漂移系数期望(lambda): {torch.mean(miu_theta).item():.4f}")
+print(f"RMSE: {np.sqrt(MSE):.4f}")
+print(f"预测准确率: {Accuracy:.2f}%") 
+print(f"Score: {score:.4f}")
+
+# 保存关键结果到文件
+results = {
+    'CHI': d1b.cpu().detach().numpy(),
+    'true_life': dao_rua,
+    'predicted_life': Te,
+    'threshold': gcn.miu_w.item(),
+    'lambda': torch.mean(miu_theta).item(),
+    'RMSE': np.sqrt(MSE),
+    'accuracy': Accuracy,
+    'score': score
+}
+
+np.save('model_results.npy', results)
 
